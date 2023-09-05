@@ -75,7 +75,8 @@ public class LookOffersController implements Initializable {
     } 
     
     public void setUsuario(Usuario u){
-        this.usuario = u;
+        Usuario user = Usuario.filtrarCorreo(usuariosArchivo, u.getCorreo());
+        this.usuario = user;
         llenarComboBox();
         vehiculos = usuario.getVehiculos();
         cbxplacas.setOnAction(event -> mostrarOfertas());

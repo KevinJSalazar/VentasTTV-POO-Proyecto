@@ -9,8 +9,10 @@ import ec.edu.espol.model.Oferta;
 import ec.edu.espol.model.Usuario;
 import ec.edu.espol.model.Vehiculo;
 import ec.edu.espol.ventattv.App;
+import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import javafx.collections.FXCollections;
@@ -105,8 +107,6 @@ public class SearchVehiclesController implements Initializable {
         cbTipoVeh.getItems().addAll("Todos","Automóvil", "Camioneta", "Motocicleta");
         vboferta.setSpacing(5);
         hVehiculo.setSpacing(10);
-
-        mostrarImagenesVehiculos(vehiculos);
         
         vehiculosObs = FXCollections.observableArrayList(vehiculos);
         this.tPlaca.setCellValueFactory(new PropertyValueFactory("placa"));
@@ -120,6 +120,7 @@ public class SearchVehiclesController implements Initializable {
 
     public void setUsuario(Usuario u){
         this.usuario = u;
+//        mostrarImagenesVehiculos(vehiculos);
     }
 
     @FXML
@@ -162,8 +163,9 @@ public class SearchVehiclesController implements Initializable {
             
             if((String)cbTipoVeh.getValue() != null)
                 tipo = (String)cbTipoVeh.getValue();
-            mostrarVehiculos(Vehiculo.filtrarVehiculos(vehiculos, tipo, recorridoMin, recorridoMax, añoMin, añoMax, precioMin, precioMax)); 
-            mostrarImagenesVehiculos(Vehiculo.filtrarVehiculos(vehiculos, tipo, recorridoMin, recorridoMax, añoMin, añoMax, precioMin, precioMax));
+            ArrayList<Vehiculo> vehiculosfil = Vehiculo.filtrarVehiculos(vehiculos, tipo, recorridoMin, recorridoMax, añoMin, añoMax, precioMin, precioMax);
+            mostrarVehiculos(vehiculosfil); 
+            mostrarImagenesVehiculos(vehiculosfil);
         } catch(NegativeNumberException nn){
             Alert mensaje = new Alert(Alert.AlertType.ERROR, "Ingrese valores numéricos válidos.");
             mensaje.show();
@@ -190,68 +192,85 @@ public class SearchVehiclesController implements Initializable {
     private void mostrarImagenesVehiculos(ArrayList<Vehiculo> vehiculoss){
         hVehiculo.getChildren().clear();
         vboferta.getChildren().clear();
-        for(Vehiculo v : vehiculoss){
-            Image im = new Image("imagenesVehiculos/"+v.getPlaca()+".png");
-            ImageView img = new ImageView(im);
-            img.setFitHeight(130);
-            img.setFitWidth(130);
-            img.addEventHandler(MouseEvent.MOUSE_CLICKED, (MouseEvent t) -> {
-                vboferta.getChildren().clear();
-                Text texto = new Text("Placa: "+v.getPlaca());
-                TextField t1 = new TextField();
-                Button t2 = new Button("Ofertar"); 
-                vboferta.getChildren().addAll(texto,t1,t2);
-                t2.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler(){
-                    @Override
-                    public void handle(Event t) {
-                        try{
-                            int valorOfertado = Integer.parseInt((String) t1.getText());
-                            if(valorOfertado <= 0)
-                                throw new NegativeNumberException();
-                            else{
-                                Oferta oferta = new Oferta(valorOfertado, usuario, v);
-                                Alert mensaje1 = new Alert(Alert.AlertType.CONFIRMATION, "¿Seguro que quiere realizar esta oferta?");
-                                Optional<ButtonType> resultado = mensaje1.showAndWait();
-                                if(resultado.isPresent()){
-                                    if(resultado.get() == ButtonType.OK){
-                                        if(usuario.getCorreo().equals(v.getUsuario().getCorreo())){
-                                            Alert mensaje2 = new Alert(Alert.AlertType.ERROR, "El vehículo por el que está ofertando es suyo.");
-                                            mensaje2.show();
-                                        }                                      
-                                        else if(Oferta.checkOferta(ofertas, usuario.getCorreo(), v.getPlaca(), valorOfertado)){
-                                            Alert mensaje2 = new Alert(Alert.AlertType.ERROR, "Ya ha realizado una oferta para este vehículo con ese valor.");
-                                            mensaje2.show();
+        String rutaProyecto = System.getProperty("user.dir");
+        String rutaCarpetaDestino = rutaProyecto + File.separator + "imagenesVehiculos";
+        File directorio = new File(rutaCarpetaDestino);
+        File[] archivos = directorio.listFiles();
+        for (File archivo : archivos) {
+            for(Vehiculo v : vehiculoss){
+                if(archivo.getName().equals(v.getPlaca() + ".png")){
+                Image imagen = new Image("file:" + archivo.getAbsolutePath());
+                ImageView img = new ImageView(imagen);
+                img.setFitHeight(130);
+                img.setFitWidth(130);
+                img.addEventHandler(MouseEvent.MOUSE_CLICKED, (MouseEvent t) -> {
+                    vboferta.getChildren().clear();
+                    Text texto = new Text("Placa: "+v.getPlaca());
+                    TextField t1 = new TextField();
+                    Button t2 = new Button("Ofertar"); 
+                    vboferta.getChildren().addAll(texto,t1,t2);
+                    t2.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler(){
+                        @Override
+                        public void handle(Event t) {
+                            try{
+                                int valorOfertado = Integer.parseInt((String) t1.getText());
+                                if(valorOfertado <= 0)
+                                    throw new NegativeNumberException();
+                                else{
+                                    Oferta oferta = new Oferta(valorOfertado, usuario, v);
+                                    Alert mensaje1 = new Alert(Alert.AlertType.CONFIRMATION, "¿Seguro que quiere realizar esta oferta?");
+                                    Optional<ButtonType> resultado = mensaje1.showAndWait();
+                                    if(resultado.isPresent()){
+                                        if(resultado.get() == ButtonType.OK){
+                                            if(usuario.getCorreo().equals(v.getUsuario().getCorreo())){
+                                                Alert mensaje2 = new Alert(Alert.AlertType.ERROR, "El vehículo por el que está ofertando es suyo.");
+                                                mensaje2.show();
+                                            }                                      
+                                            else if(Oferta.checkOferta(ofertas, usuario.getCorreo(), v.getPlaca(), valorOfertado)){
+                                                Alert mensaje2 = new Alert(Alert.AlertType.ERROR, "Ya ha realizado una oferta para este vehículo con ese valor.");
+                                                mensaje2.show();
+                                            }
+                                            else{
+                                                Alert mensaje2 = new Alert(Alert.AlertType.INFORMATION, "¡Su oferta ha sido realizada con éxito!");
+                                                mensaje2.show();
+                                                Usuario comprador = Usuario.filtrarCorreo(usuarios, usuario.getCorreo());
+                                                Usuario vendedor = Usuario.filtrarCorreo(usuarios, v.getUsuario().getCorreo());
+                                                comprador.getOfertas().add(oferta);
+                                                Vehiculo vVendedor = Vehiculo.filtrarPlaca(vendedor.getVehiculos(), v.getPlaca());
+                                                vVendedor.getOfertas().add(oferta);
+                                                Usuario.saveListUsuariosSer(usuarios);
+                                                Vehiculo veh = Vehiculo.filtrarPlaca(vehiculos, v.getPlaca());
+                                                veh.getOfertas().add(oferta);
+                                                Vehiculo.saveListVehiculosSer(vehiculos);
+                                                ofertas.add(oferta);
+                                                Oferta.saveListOfertaSer(ofertas);
+                                            } 
                                         }
-                                        else{
-                                            Alert mensaje2 = new Alert(Alert.AlertType.INFORMATION, "¡Su oferta ha sido realizada con éxito!");
-                                            mensaje2.show();
-                                            Usuario comprador = Usuario.filtrarCorreo(usuarios, usuario.getCorreo());
-                                            Usuario vendedor = Usuario.filtrarCorreo(usuarios, v.getUsuario().getCorreo());
-                                            comprador.getOfertas().add(oferta);
-                                            Vehiculo vVendedor = Vehiculo.filtrarPlaca(vendedor.getVehiculos(), v.getPlaca());
-                                            vVendedor.getOfertas().add(oferta);
-                                            Usuario.saveListUsuariosSer(usuarios);
-                                            Vehiculo veh = Vehiculo.filtrarPlaca(vehiculos, v.getPlaca());
-                                            veh.getOfertas().add(oferta);
-                                            Vehiculo.saveListVehiculosSer(vehiculos);
-                                            ofertas.add(oferta);
-                                            Oferta.saveListOfertaSer(ofertas);
-                                        } 
                                     }
                                 }
+                            } catch(NegativeNumberException nn){
+                                Alert mensaje = new Alert(Alert.AlertType.ERROR, "Ingrese un valor numérico válido.");
+                                mensaje.show();
+                            } catch(NumberFormatException nf){
+                                Alert mensaje = new Alert(Alert.AlertType.ERROR, "Ingrese un valor numérico.");
+                                mensaje.show();
                             }
-                        } catch(NegativeNumberException nn){
-                            Alert mensaje = new Alert(Alert.AlertType.ERROR, "Ingrese un valor numérico válido.");
-                            mensaje.show();
-                        } catch(NumberFormatException nf){
-                            Alert mensaje = new Alert(Alert.AlertType.ERROR, "Ingrese un valor numérico.");
-                            mensaje.show();
                         }
-                    }
+                    });
                 });
-            });
-            hVehiculo.getChildren().add(img);
+                hVehiculo.getChildren().add(img);
+                }
+            }
         }
     }
-      
+
+    @FXML
+    private void clear(MouseEvent event) {
+        minPrecio.setText("");
+        maxPrecio.setText("");
+        minAño.setText("");
+        maxAño.setText("");
+        minRec.setText("");
+        maxRec.setText("");
+    }
 }
