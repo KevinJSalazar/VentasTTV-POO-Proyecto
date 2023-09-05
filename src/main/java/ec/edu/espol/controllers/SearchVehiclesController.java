@@ -265,7 +265,7 @@ public class SearchVehiclesController implements Initializable {
     }
 
     @FXML
-    private void clear(MouseEvent event) {
+    private void clear(MouseEvent event){
         minPrecio.setText("");
         maxPrecio.setText("");
         minAño.setText("");
