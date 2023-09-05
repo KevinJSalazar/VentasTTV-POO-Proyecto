@@ -80,7 +80,7 @@ public class LookOffersController implements Initializable {
         llenarComboBox();
         vehiculos = usuario.getVehiculos();
         cbxplacas.setOnAction(event -> mostrarOfertas());
-        mostrarImagen();
+        aceptarOferta();
 
     }
     
@@ -118,14 +118,13 @@ public class LookOffersController implements Initializable {
         }
     }
     
-    private void mostrarImagen(){
+    private void aceptarOferta(){
         tvoferta.getSelectionModel().selectedItemProperty().addListener(
         (observable, oldValue, newValue) -> {
         if (newValue != null) {
             String placaSeleccionada = newValue.getVehiculo().getPlaca();
             String correoSeleccionado = newValue.getUsuario().getCorreo();
             int valorSeleccionado = newValue.getValor();
-            imv.setImage(new Image("imagenesVehiculos/"+placaSeleccionada+".png"));
             btnAceptar.addEventHandler(MouseEvent.MOUSE_CLICKED, new EventHandler(){
                 @Override
                 public void handle(Event t) {
@@ -153,7 +152,6 @@ public class LookOffersController implements Initializable {
             });
         }
         });
-        
     }
     
     
